@@ -56,14 +56,15 @@ def getState(unicodePage):
 	party = myItems[0][1]
 	return party	
 
-def getDWScore(congressPeopleLastName, congressPeopleState, tempCongressType, DWScoreDict):
-	# for DW dict, the key is name+'#'+state+'#'+congressType
+def getDWScore(congressPeopleLastName, congressPeopleState, congressPeoplePartyType, DWScoreDict):
+	# for DW dict, the key is name+'#'+state+'#'+partyType
 	for key, probValue in DWScoreDict.iteritems():
-		[tempLastName, tempState, tempCongressType] = key.split('#')
+		[tempLastName, tempState, tempPartyType] = key.split('#')
 		if tempLastName.lower() == congressPeopleLastName.lower():
 			if tempState.lower() in congressPeopleState.lower():
-				if congressType == tempCongressType.lower():
+				if tempPartyType.lower() == congressPeoplePartyType.lower():
 					return probValue
+	return 'null'
 
 
 def getCongressPeopleData(baseUrl, pageIndex, stateNameDict, DWScoreDict):
@@ -82,7 +83,7 @@ def getCongressPeopleData(baseUrl, pageIndex, stateNameDict, DWScoreDict):
 			tempState = tempState.lower()
 			tempStateBrief = stateNameDict[tempState]
 			tempCongressType = getCongressType(eachitem)
-			tempDWScore = getDWScore(tempLastName, tempState, tempCongressType, DWScoreDict)
+			tempDWScore = getDWScore(tempLastName, tempState, tempParty, DWScoreDict)
 			tempKey = tempLastName+'#'+tempState+'#'+tempCongressType
 			
 			tempPeople = congressMan(tempName)
@@ -94,28 +95,34 @@ def getCongressPeopleData(baseUrl, pageIndex, stateNameDict, DWScoreDict):
 			tempPeople.setDWNScore(tempDWScore)
 
 			congressPeopleDict[tempKey] = tempPeople
+			tempPeople.printCongressPeople()
+			
 		return congressPeopleDict
 	# except:
 	# 	return congressPeopleDict
 
 def DW_file_parseSentence(eachline):
     time = eachline[0:4].strip()
-    state = eachline[16:25].strip()
-    party = eachline[25:29].strip()
-    name = eachline[29:43].strip()
-    prob_1 = float(eachline[43:53].strip())
-    prob_2 = float(eachline[53:63].strip())
+    state = eachline[22:33].strip()
+    party_number = eachline[33:37].strip()
+    if party_number == '200':
+    	party = 'Republican'
+    else:
+    	party = 'Democratic'
+    name = eachline[45:59].strip().split()[0]
+    prob_1 = float(eachline[59:65].strip())
+    prob_2 = float(eachline[68:74].strip())
     return [time,state,party,name,prob_1,prob_2]
 
-def parseDWOrginalFile(congressType,yearNumber):
+def parseDWOrginalFile(classNumber):
 	totalProb = []
 	ProbDict = {}
-	reader = open('DW_score_' + congressType + '.txt')
+	reader = open('DW_scores.txt')
 	for eachline in reader:
-		[time,state,party,name,prob_1,prob_2] = parseSentence(eachline)
-		if time== yearNumber:
+		[time,state,party,name,prob_1,prob_2] = DW_file_parseSentence(eachline)
+		if time == classNumber:
 			name = name.lower()
-			storeKey = name+'#'+state+'#'+congressType
+			storeKey = name+'#'+state+'#'+party
 			ProbDict[storeKey] = prob_1
 	return ProbDict
 
@@ -142,20 +149,16 @@ cPickle.dump(stateNameDict,open('stateNameDict','wb'))
 
 congressPeopleDict = {}
 for year, pageInfo in year_number_page_dict.iteritems():
-	DWScoreDict = {}
-	# get house DW score dict
-	DWScoreDict.update(parseDWOrginalFile('house',year))
-	DWScoreDict.update(parseDWOrginalFile('senate',year))
-
 	[classNumber, totalPageNumber] = pageInfo
+	DWScoreDict = parseDWOrginalFile(classNumber)
 	baseUrl = 'https://www.congress.gov/members?q={"congress":"'+classNumber+'"}&page='
 	congressPeopleDict_oneYear = {}
 	for i in range(totalPageNumber):
 		congressPeopleDict_oneYear.update(getCongressPeopleData(baseUrl, str(i+1), stateNameDict, DWScoreDict))
 	congressPeopleDict[year] = congressPeopleDict_oneYear
-	for key, info in congressPeopleDict_oneYear.iteritems():
-		print key
-		info.printCongressPeople()
+	# for key, info in congressPeopleDict_oneYear.iteritems():
+	# 	print key
+	# 	info.printCongressPeople()
 	break
 # cPickle.dump(congressPeopleDict,open('congressPeopleDict','wb'))
 
