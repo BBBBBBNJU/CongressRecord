@@ -21,3 +21,13 @@ class congressMan():
     def setDWNScore(self, dw_score):
         self.dw_score = dw_score
 
+    def printCongressPeople(self):
+        print self.name
+        print self.lastname
+        print self.congress_type
+        print self.party
+        print self.state
+        print self.state_brief
+        print self.dw_score
+        print '======'
+
