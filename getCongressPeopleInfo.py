@@ -68,38 +68,34 @@ def getDWScore(congressPeopleLastName, congressPeopleState, congressPeoplePartyT
 
 
 def getCongressPeopleData(baseUrl, pageIndex, stateNameDict, DWScoreDict):
-		congressPeopleDict = {}
-	# try:
-		temp_url = baseUrl + pageIndex
-		unicodePage=getunicodePage(temp_url)
-		target='<span class="result-heading"><a href="(.*?)</ul>'
-		myItems = re.findall(target,unicodePage,re.DOTALL)
-		myItems = list(set(myItems))
-		for eachitem in myItems:
-			tempName = getName(eachitem)
-			tempLastName = tempName.split(',')[0]
-			tempParty = getParty(eachitem)
-			tempState = getState(eachitem)
-			tempState = tempState.lower()
-			tempStateBrief = stateNameDict[tempState]
-			tempCongressType = getCongressType(eachitem)
-			tempDWScore = getDWScore(tempLastName, tempState, tempParty, DWScoreDict)
-			tempKey = tempLastName+'#'+tempState+'#'+tempCongressType
-			
-			tempPeople = congressMan(tempName)
-			tempPeople.setLastName(tempLastName)
-			tempPeople.setCongressType(tempCongressType)
-			tempPeople.setParty(tempParty)
-			tempPeople.setState(tempState)
-			tempPeople.setStateBrief(tempStateBrief)
-			tempPeople.setDWNScore(tempDWScore)
+	congressPeopleDict = {}
+	temp_url = baseUrl + pageIndex
+	unicodePage=getunicodePage(temp_url)
+	target='<span class="result-heading"><a href="(.*?)</ul>'
+	myItems = re.findall(target,unicodePage,re.DOTALL)
+	myItems = list(set(myItems))
+	for eachitem in myItems:
+		tempName = getName(eachitem)
+		tempLastName = tempName.split(',')[0]
+		tempParty = getParty(eachitem)
+		tempState = getState(eachitem)
+		tempState = tempState.lower()
+		tempStateBrief = stateNameDict[tempState]
+		tempCongressType = getCongressType(eachitem)
+		tempDWScore = getDWScore(tempLastName, tempState, tempParty, DWScoreDict)
+		tempKey = tempLastName+'#'+tempState+'#'+tempCongressType
+		
+		tempPeople = congressMan(tempName)
+		tempPeople.setLastName(tempLastName)
+		tempPeople.setCongressType(tempCongressType)
+		tempPeople.setParty(tempParty)
+		tempPeople.setState(tempState)
+		tempPeople.setStateBrief(tempStateBrief)
+		tempPeople.setDWNScore(tempDWScore)
 
-			congressPeopleDict[tempKey] = tempPeople
-			tempPeople.printCongressPeople()
-			
-		return congressPeopleDict
-	# except:
-	# 	return congressPeopleDict
+		congressPeopleDict[tempKey] = tempPeople			
+	return congressPeopleDict
+
 
 def DW_file_parseSentence(eachline):
     time = eachline[0:4].strip()
@@ -160,7 +156,7 @@ for year, pageInfo in year_number_page_dict.iteritems():
 	print 'total number: '+ str(len(congressPeopleDict_oneYear))
 	count = 0
 	for key, people in congressPeopleDict_oneYear.iteritems():
-		if people.dw_scores == 'null':
+		if people.dw_score == 'null':
 			count += 1
 	print 'loss number: '+ str(count)
 	print '=============='
