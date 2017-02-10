@@ -113,7 +113,7 @@ def DW_file_parseSentence(eachline):
 def parseDWOrginalFile(classNumber):
 	totalProb = []
 	ProbDict = {}
-	reader = open('DW_scores.txt')
+	reader = open('./data/DW_scores.txt')
 	for eachline in reader:
 		[time,state,party,name,prob_1,prob_2] = DW_file_parseSentence(eachline)
 		if time == classNumber:
@@ -136,7 +136,7 @@ year_number_page_dict = {
 	'2016':['114',6]
 }
 
-reader = open('./abbreviations.txt','r')
+reader = open('./data/abbreviations.txt','r')
 stateNameDict = {}
 for eachline in reader:
 	[fullname,abbrName] = eachline.strip().split(',')
