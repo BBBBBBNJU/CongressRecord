@@ -60,7 +60,7 @@ def getDWScore(congressPeopleLastName, congressPeopleState, congressPeoplePartyT
 	# for DW dict, the key is name+'#'+state+'#'+partyType
 	for key, probValue in DWScoreDict.iteritems():
 		[tempLastName, tempState, tempPartyType] = key.split('#')
-		if tempLastName.lower() == congressPeopleLastName.lower():
+		if tempLastName.lower() in congressPeopleLastName.lower() or tempLastName[0:len(tempLastName)-1] in congressPeopleLastName.lower():
 			if tempState.lower() in congressPeopleState.lower():
 				if tempPartyType.lower() == congressPeoplePartyType.lower():
 					return probValue
@@ -156,11 +156,17 @@ for year, pageInfo in year_number_page_dict.iteritems():
 	for i in range(totalPageNumber):
 		congressPeopleDict_oneYear.update(getCongressPeopleData(baseUrl, str(i+1), stateNameDict, DWScoreDict))
 	congressPeopleDict[year] = congressPeopleDict_oneYear
-	# for key, info in congressPeopleDict_oneYear.iteritems():
-	# 	print key
-	# 	info.printCongressPeople()
-	break
-# cPickle.dump(congressPeopleDict,open('congressPeopleDict','wb'))
+	print year + ' stat: '
+	print 'total number: '+ str(len(congressPeopleDict_oneYear))
+	count = 0
+	for key, people in congressPeopleDict_oneYear.iteritems():
+		if people.dw_scores == 'null':
+			count += 1
+	print 'loss number: '+ str(count)
+	print '=============='
+	os.system("echo \"finishe year: " + year + "\" | mail -s \"update\" haoyan.wustl@gmail.com")
+
+cPickle.dump(congressPeopleDict,open('congressPeopleDict','wb'))
 
 
 	
