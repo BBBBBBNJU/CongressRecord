@@ -11,23 +11,7 @@ import time
 import codecs
 import os
 import sys
-
-class congressMan():
-    def __init__(self, name):
-        self.name = name
-        self.lastname = name.split()[len(name.split())-1]
-
-    def setType(self, type):
-        self.type = type
-
-    def setParty(self,party):
-        self.party = party
-
-    def setState(self,state):
-        self.state = state
-
-    def setStateBrief(self,state_brief):
-        self.state_brief = state_brief
+from util import *
 
 def getunicodePage(Url):
 	headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36'}
@@ -60,13 +44,23 @@ def getParty(unicodePage):
 	party = myItems[0][1]
 	return party
 
-def getServeTime(unicodePage):
+def getCongressType(unicodePage):
 	target='<li>(.*?)</li>'
 	myItems = re.findall(target,unicodePage,re.DOTALL)
-	serveTime = myItems[0]
-	return serveTime
+	congressType = myItems[0].split(':')[0]
+	return congressType
 
-def getCongressPeopleData(baseUrl, pageIndex):
+def getState(unicodePage):
+	target='State:(.*?)<span>(.*?)</span>'
+	myItems = re.findall(target,unicodePage,re.DOTALL)
+	party = myItems[0][1]
+	return party	
+
+def getDWScore(tempLastName, tempState, DWScoreDict):
+
+
+
+def getCongressPeopleData(baseUrl, pageIndex, stateNameDict, DWScoreDict):
 		congressPeopleDict = {}
 	# try:
 		temp_url = baseUrl + pageIndex
@@ -76,8 +70,15 @@ def getCongressPeopleData(baseUrl, pageIndex):
 		myItems = list(set(myItems))
 		for eachitem in myItems:
 			tempName = getName(eachitem)
+			tempLastName = tempName.split(',')[0]
 			tempParty = getParty(eachitem)
-			tempServeTime = getServeTime(eachitem)
+			tempState = getState(eachitem)
+			tempState = tempState.lower()
+			tempStateBrief = stateNameDict[tempState]
+			tempCongressType = getCongressType(eachitem)
+			tempDWScore = getDWScore(tempLastName, tempState, DWScoreDict)
+
+
 			congressPeopleDict[tempName] = [tempParty, tempServeTime]
 		return congressPeopleDict
 	# except:
@@ -96,12 +97,20 @@ year_number_page_dict = {
 	'2015':['114',6],
 	'2016':['114',6]
 }
+
+reader = open('./abbreviations.txt','r')
+stateNameDict = {}
+for eachline in reader:
+	[fullname,abbrName] = eachline.strip().split(',')
+	stateNameDict[fullname.lower()] = abbrName.lower()
+
+congressPeopleDict = {}
 for year, pageInfo in year_number_page_dict.iteritems():
 	[classNumber, totalPageNumber] = pageInfo
 	baseUrl = 'https://www.congress.gov/members?q={"congress":"'+classNumber+'"}&page='
-	congressPeopleDict = {}
+	congressPeopleDict_oneYear = {}
 	for i in range(totalPageNumber):
-		congressPeopleDict.update(getCongressPeopleData(baseUrl, str(i+1)))
-	cPickle.dump(congressPeopleDict,open('congressPeopleDict_'+congressNumber,'wb'))
-	print len(congressPeopleDict)
-	print congressPeopleDict['Thune, John']
+		congressPeopleDict_oneYear.update(getCongressPeopleData(baseUrl, str(i+1),stateNameDict))
+	congressPeopleDict[year] = congressPeopleDict_oneYear
+cPickle.dump(congressPeopleDict,open('congressPeopleDict','wb'))
+	
