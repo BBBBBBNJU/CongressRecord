@@ -1,4 +1,22 @@
 # -*- coding: utf-8 -*- 
+import os
+import re
+from nltk.tokenize import sent_tokenize
+import cPickle
+from nltk.tokenize import word_tokenize
+import sys
+from nltk.corpus import stopwords
+
+space = ' '
+stop = stopwords.words('english')
+reader = open('stopwords.txt','r')
+for eachline in reader:
+    stop.append(eachline.strip())
+en_stop = list(set(stop))
+p_stemmer = PorterStemmer()
+htmlentities = ["&quot;","&nbsp;","&amp;","&lt;","&gt;","&OElig;","&oelig;","&Scaron;","&scaron;","&Yuml;","&circ;","&tilde;","&ensp;","&emsp;","&thinsp;","&zwnj;","&zwj;","&lrm;","&rlm;","&ndash;","&mdash;","&lsquo;","&rsquo;","&sbquo;","&ldquo;","&rdquo;","&bdquo;","&dagger;","&Dagger;","&permil;","&lsaquo;"]
+validElement = [',','.','"','\'']
+
 class congressMan():
     def __init__(self, name):
         self.name = name
@@ -44,10 +62,26 @@ class singleSpeech():
     def setCongressType(self, congressType):
         self.congressType = congressType
 
+    def setState(self,state):
+        self.state = state
+
+    def setDWNScore(self, dw_score):
+        self.dw_score = dw_score
+
     def setTime(self,year,month,day):
         self.year = year
         self.month = month
         self.day = day
+
+    def printSingleSpeech(self):
+        print self.congressManName
+        print self.party
+        print self.congressType
+        print self.state
+        print self.dw_score
+        print str(self.year)+'/'+str(self.month)+'/'+str(self.day)
+        print self.text
+        print '====='
 
     def cleanArticle(self):
         # delete the first sentence and last paragraph
