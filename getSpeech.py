@@ -249,5 +249,5 @@ if __name__ == "__main__":
             #         eachSpeech.printSingleSpeech()
             # if count > 5:
             #     break
-
     cPickle.dump(speechInOneYear,open('./speechDump/speech_'+year+'_dump','wb'))
+    os.system("echo \"finish year: " + year + "\" | mail -s \"update\" haoyan.wustl@gmail.com")
