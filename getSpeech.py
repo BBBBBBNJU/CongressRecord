@@ -19,10 +19,11 @@ def getTime(eachline):
     return year,month,day
 
 def FirstLineSpeech(eachline):
-    try:
-        return sent_tokenize(eachline)[1]
-    except:
-        return eachline
+    # try:
+    #     return sent_tokenize(eachline)[1]
+    # except:
+    #     return eachline
+    return eachline
 
 def detectStop(eachline):
     eachline = re.sub(r',',' ',eachline)
@@ -61,8 +62,23 @@ def cleanLine(eachline):
     eachline = re.sub(r'\((.*?)\)',' ',eachline)
     return eachline
 
-def processPossibleDoubleLastName(initialIndex, wordFirstSentence):
-    for i in range(initialIndex, 5):
+def findLastName(initialIndex, wordFirstSentence, allNameList):
+    # if 'of' not in wordFirstSentence[1:5]:
+    congressManName = []
+    i = initialIndex
+    while i < len(wordFirstSentence) and wordFirstSentence[i].isupper():
+        congressManName.append(wordFirstSentence[i].lower())
+        i += 1
+    temp_name = ' '.join(congressManName)
+    # else:
+    #     index_to = wordFirstSentence.index('of')
+    #     congressManName = []
+    #     for i in range(initialIndex, index_to):
+    #         congressManName.append(wordFirstSentence[i].lower())
+    #     temp_name = ' '.join(congressManName)
+    if not temp_name in allNameList:
+        temp_name = 'null'
+    return temp_name
         
 
 def detectStart(congressType, originalSentence, firstLayerIndex, allNameList, repeatNameList):
@@ -77,33 +93,33 @@ def detectStart(congressType, originalSentence, firstLayerIndex, allNameList, re
     congressManInfo = ""
     if len(wordFirstSentence)>=6:
         if '.' in ' '.join(originalSentence.split()[1:6]):
-            if  wordFirstSentence[0] in m_stuff and wordFirstSentence[1].isupper() and wordFirstSentence[1].lower() in allNameList:
-                congressManCondition = True
-                congressManName = wordFirstSentence[1].lower()
-                if wordFirstSentence[3] == 'of':
-                    congressManName += ' ' + wordFirstSentence[2].lower()
-            if wordFirstSentence[0].isupper() and wordFirstSentence[0].lower() in allNameList:
-                congressManCondition = True
-                congressManName = wordFirstSentence[0].lower()
-                if wordFirstSentence[2] == 'of':
-                    congressManName += ' ' + wordFirstSentence[1].lower()
-            if congressManCondition == False:
-                if wordFirstSentence[0] in m_stuff and getridpossibleLower(wordFirstSentence[1]).isupper() and (wordFirstSentence[1].lower() in allNameList):
+            try:
+                if  wordFirstSentence[0] in m_stuff and wordFirstSentence[1].isupper():
                     congressManCondition = True
-                    congressManName = wordFirstSentence[1].lower()
-                    if wordFirstSentence[3] == 'of':
-                        congressManName += ' ' + wordFirstSentence[2].lower()
+                    congressManName = findLastName(1, wordFirstSentence, allNameList)
+                if wordFirstSentence[0].isupper() and len(wordFirstSentence[0]) >= 2:
+                    congressManCondition = True
+                    congressManName = findLastName(0, wordFirstSentence, allNameList)
 
-            if congressManCondition:
-                if congressManName not in repeatNameList:
-                    congressManInfo  = firstLayerIndex[congressManName][0]
-                else:
-                    # multiple congress people with same last name, need chekc congress type and state
-                    for eachPossibleCongressManInfo in firstLayerIndex[congressManName]:
-                        temp_lastName, temp_state, temp_congressType, temp_party, temp_dw_score = eachPossibleCongressManInfo.split('#')
-                        if temp_state in wordFirstSentence_lower[0:6] and temp_congressType == congressType:
-                            congressManInfo = eachPossibleCongressManInfo
-        
+                if congressManCondition == False:
+                    if wordFirstSentence[0] in m_stuff and getridpossibleLower(wordFirstSentence[1]).isupper():
+                        congressManCondition = True
+                        wordFirstSentence[1] = getridpossibleLower(wordFirstSentence[1])
+                        congressManName = findLastName(1, wordFirstSentence, allNameList)
+
+                if congressManCondition and congressManName != 'null':
+                    if congressManName not in repeatNameList:
+                        congressManInfo  = firstLayerIndex[congressManName][0]
+                    else:
+                        # multiple congress people with same last name, need chekc congress type and state
+                        for eachPossibleCongressManInfo in firstLayerIndex[congressManName]:
+                            temp_lastName, temp_state, temp_congressType, temp_party, temp_dw_score = eachPossibleCongressManInfo.split('#')
+                            if temp_state in wordFirstSentence_lower[0:6] and temp_congressType == congressType:
+                                congressManInfo = eachPossibleCongressManInfo
+            except:
+                print 11111
+                print wordFirstSentence
+                raise
         if wordFirstSentence[0] == 'The' and ((wordFirstSentence[1].isupper() and wordFirstSentence[1].lower() in officer) or wordFirstSentence[1]=='Clerk' or (wordFirstSentence[2].isupper() and wordFirstSentence[2].lower() in officer)):
             SpeakerCondition = True 
         return congressManCondition,SpeakerCondition,congressManName,congressManInfo
@@ -151,8 +167,9 @@ def getSpeechOneArticle(congressType, oneArticleDir, firstLayerIndex, allNameLis
                     tempSpeech.setCongressType(congressType)
                     tempSpeech.setState(previousCongressManState)
                     tempSpeech.setDWNScore(previousCongressManDwScore)
-                    tempSpeech.cleanArticle()
-                    speechInThisPage.append(tempSpeech)
+                    # tempSpeech.cleanArticle()
+                    if tempSpeech.congressManName != 'null':
+                        speechInThisPage.append(tempSpeech)
 
                 newSpeech = FirstLineSpeech(eachline)
                 previousCongressManName = currentCongressManName
@@ -169,8 +186,9 @@ def getSpeechOneArticle(congressType, oneArticleDir, firstLayerIndex, allNameLis
                     tempSpeech.setCongressType(congressType)
                     tempSpeech.setState(previousCongressManState)
                     tempSpeech.setDWNScore(previousCongressManDwScore)
-                    tempSpeech.cleanArticle()
-                    speechInThisPage.append(tempSpeech)
+                    # tempSpeech.cleanArticle()
+                    if tempSpeech.congressManName != 'null':
+                        speechInThisPage.append(tempSpeech)
                 currentCongressManInfo = ''
                 currentCongressManName = ''
                 newSpeech = ''
@@ -196,7 +214,8 @@ def getSpeechOneArticle(congressType, oneArticleDir, firstLayerIndex, allNameLis
         tempSpeech.setState(previousCongressManState)
         tempSpeech.setDWNScore(previousCongressManDwScore)
         tempSpeech.cleanArticle()
-        speechInThisPage.append(tempSpeech)
+        if tempSpeech.congressManName != 'null':
+            speechInThisPage.append(tempSpeech)
     
 
 
@@ -226,7 +245,6 @@ if __name__ == "__main__":
     speechInOneYear = []
     count = 0
     for eachline in speech_listFile:
-            
         # try:
             if 'H' in eachline:
                 speechInOneArticle = getSpeechOneArticle('house',eachline.strip(), firstLayerIndex, allNameList, repeatNameList)
@@ -234,14 +252,14 @@ if __name__ == "__main__":
                 speechInOneArticle = getSpeechOneArticle('senate',eachline.strip(), firstLayerIndex, allNameList, repeatNameList)
         # except:
         #     print "fail at: "+eachline
-            speechInOneYear += speechInOneArticle
+            # speechInOneYear += speechInOneArticle
             
             if len(speechInOneArticle) > 2:
                 count += 1
                 print eachline
                 for eachSpeech in speechInOneArticle:
                     eachSpeech.printSingleSpeech()
-            if count > 3:
+            if count > 5:
                 break
 
     # cPickle.dump(speechInOneYear,open('./speechDump/speech_'+year+'_dump','wb'))
