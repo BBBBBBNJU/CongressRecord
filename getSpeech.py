@@ -238,9 +238,10 @@ if __name__ == "__main__":
                 speechInOneArticle = getSpeechOneArticle('house',eachline.strip(), firstLayerIndex, allNameList, repeatNameList)
             else:
                 speechInOneArticle = getSpeechOneArticle('senate',eachline.strip(), firstLayerIndex, allNameList, repeatNameList)
+            speechInOneYear += speechInOneArticle
         except:
             print "fail at: "+eachline
-            speechInOneYear += speechInOneArticle
+            
             
             # if len(speechInOneArticle) > 2:
             #     count += 1
