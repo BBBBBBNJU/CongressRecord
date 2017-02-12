@@ -6,7 +6,7 @@ import cPickle
 from nltk.tokenize import word_tokenize
 import sys
 from nltk.corpus import stopwords
-
+from nltk.stem.porter import PorterStemmer
 space = ' '
 stop = stopwords.words('english')
 reader = open('stopwords.txt','r')
@@ -16,6 +16,7 @@ en_stop = list(set(stop))
 p_stemmer = PorterStemmer()
 htmlentities = ["&quot;","&nbsp;","&amp;","&lt;","&gt;","&OElig;","&oelig;","&Scaron;","&scaron;","&Yuml;","&circ;","&tilde;","&ensp;","&emsp;","&thinsp;","&zwnj;","&zwj;","&lrm;","&rlm;","&ndash;","&mdash;","&lsquo;","&rsquo;","&sbquo;","&ldquo;","&rdquo;","&bdquo;","&dagger;","&Dagger;","&permil;","&lsaquo;"]
 validElement = [',','.','"','\'']
+leftPunctuation = ['.']
 
 class congressMan():
     def __init__(self, name):
@@ -81,7 +82,7 @@ class singleSpeech():
         print self.dw_score
         print str(self.year)+'/'+str(self.month)+'/'+str(self.day)
         print self.text
-        print '====='
+        print '========='
 
     def cleanArticle(self):
         # delete the first sentence and last paragraph
@@ -100,6 +101,7 @@ class singleSpeech():
             original = ' '.join(sentencesCutEndsent_tokenize[1:len(sentencesCutEndsent_tokenize)])
         else:
             original = textafterDeleteEnd
+
         # original process
         original = ' '.join(self.text.split())
         remainText = ""
@@ -107,15 +109,12 @@ class singleSpeech():
             eachword = original[i]
             try:
                 eachword.encode('ascii', 'ignore')
-                # if eachword.lower() not in stop:
-                remainText+=original[i]
+                remainText += original[i]
             except:
-                1
-        remainText = re.sub(r'``',' ',remainText)
-        remainText = re.sub(r'\'\'',' ',remainText)
-        remainText = re.sub(r'"',' ',remainText)
-        remainText = re.sub(r',',' ',remainText)
-        remainText = re.sub(r':',' ',remainText)
+                continue
+
+        remainText = re.sub(r'``','"',remainText)
+        remainText = re.sub(r'\'\'','"',remainText)
         remainText = re.sub(r'\?','.',remainText)
         remainText = re.sub(r'!','.',remainText)
         
@@ -124,9 +123,11 @@ class singleSpeech():
         for eachword in allwords:
             tempword = eachword.lower()
             if tempword.isalpha() or (tempword[0:len(tempword)-1].isalpha() and tempword[len(tempword)-1] in leftPunctuation):
-                if not (tempword in stopword_all or (tempword[0:len(tempword)-1] in stopword_all and (tempword[len(tempword)-1].isalpha() or tempword[len(tempword)-1] in leftPunctuation))):
+                if not (tempword in en_stop or (tempword[0:len(tempword)-1] in en_stop and (tempword[len(tempword)-1].isalpha() or tempword[len(tempword)-1] in leftPunctuation))):
                     leftwords.append(tempword)
             else:
                 leftwords.append(' ')
         self.cleanText = ' '.join(leftwords)
         self.cleanText = ' '.join(self.cleanText.split())
+
+

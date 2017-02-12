@@ -61,9 +61,14 @@ def cleanLine(eachline):
     eachline = re.sub(r'\((.*?)\)',' ',eachline)
     return eachline
 
+def processPossibleDoubleLastName(initialIndex, wordFirstSentence):
+    for i in range(initialIndex, 5):
+        
+
 def detectStart(congressType, originalSentence, firstLayerIndex, allNameList, repeatNameList):
     eachline = re.sub(r',',' ',originalSentence)
     eachline = re.sub(r'\.',' ',eachline)
+    eachline = re.sub(r'-',' ',eachline)
     wordFirstSentence = eachline.split()
     wordFirstSentence_lower = eachline.lower().split()
     congressManCondition = False
@@ -71,21 +76,27 @@ def detectStart(congressType, originalSentence, firstLayerIndex, allNameList, re
     congressManName = ""
     congressManInfo = ""
     if len(wordFirstSentence)>=6:
-        if '.' in ' '.join(originalSentence.split()[1:4]):
+        if '.' in ' '.join(originalSentence.split()[1:6]):
             if  wordFirstSentence[0] in m_stuff and wordFirstSentence[1].isupper() and wordFirstSentence[1].lower() in allNameList:
                 congressManCondition = True
                 congressManName = wordFirstSentence[1].lower()
+                if wordFirstSentence[3] == 'of':
+                    congressManName += ' ' + wordFirstSentence[2].lower()
             if wordFirstSentence[0].isupper() and wordFirstSentence[0].lower() in allNameList:
                 congressManCondition = True
                 congressManName = wordFirstSentence[0].lower()
+                if wordFirstSentence[2] == 'of':
+                    congressManName += ' ' + wordFirstSentence[1].lower()
             if congressManCondition == False:
                 if wordFirstSentence[0] in m_stuff and getridpossibleLower(wordFirstSentence[1]).isupper() and (wordFirstSentence[1].lower() in allNameList):
                     congressManCondition = True
                     congressManName = wordFirstSentence[1].lower()
+                    if wordFirstSentence[3] == 'of':
+                        congressManName += ' ' + wordFirstSentence[2].lower()
 
             if congressManCondition:
                 if congressManName not in repeatNameList:
-                    congressManInfo  = firstLayerIndex[congressManName]
+                    congressManInfo  = firstLayerIndex[congressManName][0]
                 else:
                     # multiple congress people with same last name, need chekc congress type and state
                     for eachPossibleCongressManInfo in firstLayerIndex[congressManName]:
@@ -152,9 +163,12 @@ def getSpeechOneArticle(congressType, oneArticleDir, firstLayerIndex, allNameLis
             elif SpeakerCondition or stopCondition:
                 if len(newSpeech) != 0:
                     tempSpeech = singleSpeech(newSpeech)
-                    tempSpeech.setParty(currentParty)
-                    tempSpeech.setCongressman(currentCongressManName)
+                    tempSpeech.setCongressman(previousCongressManName)
+                    tempSpeech.setParty(previousCongressManParty)
                     tempSpeech.setTime(year,month,day)
+                    tempSpeech.setCongressType(congressType)
+                    tempSpeech.setState(previousCongressManState)
+                    tempSpeech.setDWNScore(previousCongressManDwScore)
                     tempSpeech.cleanArticle()
                     speechInThisPage.append(tempSpeech)
                 currentCongressManInfo = ''
@@ -183,7 +197,9 @@ def getSpeechOneArticle(congressType, oneArticleDir, firstLayerIndex, allNameLis
         tempSpeech.setDWNScore(previousCongressManDwScore)
         tempSpeech.cleanArticle()
         speechInThisPage.append(tempSpeech)
-        
+    
+
+
     return speechInThisPage
 
 
@@ -197,27 +213,35 @@ if __name__ == "__main__":
     repeatNameList = []
     allNameList = []
     for key, congressInfo in congressPeopleDict.iteritems():
-    	[lastName, state, congressType] = key.lower().split('#')
-    	if firstLayerIndex.has_key(lastName):
-    		firstLayerIndex[lastName] = [key.lower()+'#'+congressInfo.party.lower()+'#'+str(congressInfo.dw_score)]
-    	else:
-    		firstLayerIndex[lastName].append(key.lower()+'#'+congressInfo.party.lower()+'#'+str(congressInfo.dw_score))
-    		repeatNameList.append(lastName)
+        [lastName, state, congressType] = key.lower().split('#')
+        if not firstLayerIndex.has_key(lastName):
+            firstLayerIndex[lastName] = [key.lower()+'#'+congressInfo.party.lower()+'#'+str(congressInfo.dw_score)]
+        else:
+            firstLayerIndex[lastName].append(key.lower()+'#'+congressInfo.party.lower()+'#'+str(congressInfo.dw_score))
+            repeatNameList.append(lastName)
         allNameList.append(lastName)
     allNameList = list(set(allNameList))
 
     speech_listFile = open("./speechArticleList/speech_"+year+".txt","r")
     speechInOneYear = []
+    count = 0
     for eachline in speech_listFile:
+            
         # try:
             if 'H' in eachline:
-                speechInOneYear += getSpeechOneArticle('house',eachline.strip(), firstLayerIndex, allNameList, repeatNameList)
+                speechInOneArticle = getSpeechOneArticle('house',eachline.strip(), firstLayerIndex, allNameList, repeatNameList)
             else:
-                speechInOneYear += getSpeechOneArticle('senate',eachline.strip(), firstLayerIndex, allNameList, repeatNameList)
+                speechInOneArticle = getSpeechOneArticle('senate',eachline.strip(), firstLayerIndex, allNameList, repeatNameList)
         # except:
         #     print "fail at: "+eachline
-        break
-    for eachSpeech in speechInOneYear:
-        eachSpeech.printprintSingleSpeech()
+            speechInOneYear += speechInOneArticle
+            
+            if len(speechInOneArticle) > 2:
+                count += 1
+                print eachline
+                for eachSpeech in speechInOneArticle:
+                    eachSpeech.printSingleSpeech()
+            if count > 3:
+                break
 
     # cPickle.dump(speechInOneYear,open('./speechDump/speech_'+year+'_dump','wb'))
