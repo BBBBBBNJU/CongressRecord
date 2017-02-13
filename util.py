@@ -18,6 +18,29 @@ htmlentities = ["&quot;","&nbsp;","&amp;","&lt;","&gt;","&OElig;","&oelig;","&Sc
 validElement = [',','.','"','\'']
 leftPunctuation = ['.']
 
+
+def sentencePreProcess(raw):
+    raw = raw.encode('ascii','ignore')
+    tokens = word_tokenize(raw.lower())
+    stopped_tokens = [j for j in tokens if not j in en_stop]
+    stemmed_tokens = [p_stemmer.stem(j) for j in stopped_tokens]
+    return space.join(stemmed_tokens)
+
+def preProcess(plainText):
+    plainText = re.sub(u'``','"',plainText)
+    plainText = re.sub(u'#',' ',plainText)
+    plainText = re.sub(u'\'\'',' " ',plainText)
+    plainText = re.sub(r'\?','.',plainText)
+    plainText = re.sub(r'!','.',plainText)
+    allsentences = sent_tokenize(plainText)
+    afterProcess = ""
+    for i in range(len(allsentences)):
+        if i != 0:
+            tempSentence = sentencePreProcess(allsentences[i])
+            afterProcess += tempSentence + ' '
+    return afterProcess
+
+
 class congressMan():
     def __init__(self, name):
         self.name = name
@@ -91,43 +114,28 @@ class singleSpeech():
         for i in range(len(OriginalSentences)):
             if '  ' == OriginalSentences[i][0:2]:
                 finalCut = i
-        if i > 0:
-            textafterDeleteEnd = ' '.join(OriginalSentences[0:i])
+        if finalCut > 0 and i - finalCut <= 2:
+            textafterDeleteEnd = ' '.join(OriginalSentences[0:finalCut])
         else:
             textafterDeleteEnd = ' '.join(OriginalSentences)
 
         sentencesCutEndsent_tokenize = sent_tokenize(textafterDeleteEnd)
-        if len(sentencesCutEndsent_tokenize) > 1:
-            original = ' '.join(sentencesCutEndsent_tokenize[1:len(sentencesCutEndsent_tokenize)])
+        if len(sentencesCutEndsent_tokenize) > 2:
+            self.original_cut = ' '.join(sentencesCutEndsent_tokenize[2:len(sentencesCutEndsent_tokenize)])
         else:
-            original = textafterDeleteEnd
+            self.original_cut = textafterDeleteEnd
 
         # original process
-        original = ' '.join(self.text.split())
         remainText = ""
-        for i in range(len(original)):
-            eachword = original[i]
+        for i in range(len(self.original_cut)):
+            eachword = self.original_cut[i]
             try:
                 eachword.encode('ascii', 'ignore')
-                remainText += original[i]
+                remainText += self.original_cut[i]
             except:
                 continue
-
-        remainText = re.sub(r'``','"',remainText)
-        remainText = re.sub(r'\'\'','"',remainText)
-        remainText = re.sub(r'\?','.',remainText)
-        remainText = re.sub(r'!','.',remainText)
         
-        allwords = remainText.split()
-        leftwords = []
-        for eachword in allwords:
-            tempword = eachword.lower()
-            if tempword.isalpha() or (tempword[0:len(tempword)-1].isalpha() and tempword[len(tempword)-1] in leftPunctuation):
-                if not (tempword in en_stop or (tempword[0:len(tempword)-1] in en_stop and (tempword[len(tempword)-1].isalpha() or tempword[len(tempword)-1] in leftPunctuation))):
-                    leftwords.append(tempword)
-            else:
-                leftwords.append(' ')
-        self.cleanText = ' '.join(leftwords)
-        self.cleanText = ' '.join(self.cleanText.split())
+        self.cleanText = preProcess(remainText)
+
 
 
